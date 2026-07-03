@@ -142,6 +142,8 @@
     <ClCompile Include="src\World\TileMap.cpp" />
     <ClCompile Include="src\World\Camera.cpp" />
     <ClCompile Include="src\World\Pathfinder.cpp" />
+    <ClCompile Include="src\Entity\Entity.cpp" />
+    <ClCompile Include="src\Entity\Building.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h" />
@@ -162,6 +164,9 @@
     <ClInclude Include="include\World\TileMap.h" />
     <ClInclude Include="include\World\Camera.h" />
     <ClInclude Include="include\World\Pathfinder.h" />
+    <ClInclude Include="include\Entity\Entity.h" />
+    <ClInclude Include="include\Entity\BuildingTypes.h" />
+    <ClInclude Include="include\Entity\Building.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

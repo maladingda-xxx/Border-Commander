@@ -54,6 +54,12 @@
     <ClCompile Include="src\World\Pathfinder.cpp">
       <Filter>World</Filter>
     </ClCompile>
+    <ClCompile Include="src\Entity\Entity.cpp">
+      <Filter>Entity</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Entity\Building.cpp">
+      <Filter>Entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h">
@@ -110,6 +116,15 @@
     <ClInclude Include="include\World\Pathfinder.h">
       <Filter>World</Filter>
     </ClInclude>
+    <ClInclude Include="include\Entity\Entity.h">
+      <Filter>Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Entity\BuildingTypes.h">
+      <Filter>Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Entity\Building.h">
+      <Filter>Entity</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resource">
@@ -120,6 +135,9 @@
     </Filter>
     <Filter Include="World">
       <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Entity">
+      <UniqueIdentifier>{D4E5F6A7-B8C9-0123-DEFG-234567890123}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
