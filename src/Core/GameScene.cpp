@@ -4,6 +4,7 @@
 #include "Entity/Building.h"
 #include "Entity/Entity.h"
 #include "Entity/Unit.h"
+#include "UI/BuildMenu.h"
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
@@ -13,14 +14,14 @@
 #include <sstream>
 
 GameScene::GameScene(const GameClock* clock)
-    : m_clock(clock) {
+    : m_clock(clock)
+    , m_buildMenu(m_font, &m_resourceManager) {
+    bool fontLoaded = m_font.openFromFile("C:/Windows/Fonts/arial.ttf");
+    (void)fontLoaded;
     m_resourceManager.setEventBus(&m_eventBus);
 }
 
 void GameScene::onEnter() {
-    if (!m_font.openFromFile("C:/Windows/Fonts/arial.ttf")) {
-        return;
-    }
 
     m_fpsText = std::make_unique<sf::Text>(m_font, "", 16);
     m_fpsText->setFillColor(sf::Color::White);
@@ -134,9 +135,11 @@ void GameScene::update(float dt) {
         }
     }
 
+    m_buildMenu.update();
+
     // Status text
-    if (m_placementMode) {
-        Building tempBuilding(m_selectedBuildingType);
+    if (m_buildMenu.isPlacementMode()) {
+        Building tempBuilding(m_buildMenu.getSelectedType());
         auto cost = tempBuilding.getCost();
         std::ostringstream status;
         status << "Placing " << tempBuilding.getName()
@@ -274,13 +277,13 @@ void GameScene::render(sf::RenderWindow& window) {
     }
 
     // Placement preview
-    if (m_placementMode) {
+    if (m_buildMenu.isPlacementMode()) {
         sf::Vector2f worldPos = m_camera.screenToWorld(m_mouseScreenPos, m_windowSize);
         sf::Vector2i hoveredTile = m_tileMap.worldToTile(worldPos);
 
-        Building preview(m_selectedBuildingType);
+        Building preview(m_buildMenu.getSelectedType());
         auto size = preview.getSize();
-        bool valid = canPlaceBuilding(m_selectedBuildingType, hoveredTile);
+        bool valid = canPlaceBuilding(m_buildMenu.getSelectedType(), hoveredTile);
 
         sf::Color previewColor = preview.getColor();
         previewColor.a = 120;
@@ -317,6 +320,11 @@ void GameScene::render(sf::RenderWindow& window) {
     window.draw(*m_statusText);
     window.draw(*m_fpsText);
 
+    // Build menu
+    if (!m_gameOver) {
+        m_buildMenu.render(window);
+    }
+
     // Game over overlay
     if (m_gameOver) {
         sf::Vector2u winSize = window.getSize();
@@ -336,27 +344,23 @@ void GameScene::handleInput(const sf::Event& event) {
 
         switch (key->code) {
         case sf::Keyboard::Key::Num1:
-            m_placementMode = true;
-            m_selectedBuildingType = BuildingType::Headquarters;
+            m_buildMenu.selectByKey(BuildingType::Headquarters);
             m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Num2:
-            m_placementMode = true;
-            m_selectedBuildingType = BuildingType::Barracks;
+            m_buildMenu.selectByKey(BuildingType::Barracks);
             m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Num3:
-            m_placementMode = true;
-            m_selectedBuildingType = BuildingType::Farm;
+            m_buildMenu.selectByKey(BuildingType::Farm);
             m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Num4:
-            m_placementMode = true;
-            m_selectedBuildingType = BuildingType::GoldMine;
+            m_buildMenu.selectByKey(BuildingType::GoldMine);
             m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Escape:
-            m_placementMode = false;
+            m_buildMenu.cancelPlacement();
             m_selectedEntityId = -1;
             break;
         default:
@@ -365,10 +369,16 @@ void GameScene::handleInput(const sf::Event& event) {
     } else if (event.is<sf::Event::MouseButtonPressed>()) {
         const auto& mb = event.getIf<sf::Event::MouseButtonPressed>();
         if (mb->button == sf::Mouse::Button::Left) {
-            m_dragging = true;
-            m_lastMousePos = mb->position;
-            m_mouseDownPos = mb->position;
+            // Check BuildMenu first
+            if (m_buildMenu.handleClick(mb->position)) {
+                // Handled by menu
+            } else {
+                m_dragging = true;
+                m_lastMousePos = mb->position;
+                m_mouseDownPos = mb->position;
+            }
         } else if (mb->button == sf::Mouse::Button::Right) {
+            m_buildMenu.cancelPlacement();
             handleRightClick(mb->position);
         }
     } else if (event.is<sf::Event::MouseButtonReleased>()) {
@@ -378,7 +388,7 @@ void GameScene::handleInput(const sf::Event& event) {
             int dx = mb->position.x - m_mouseDownPos.x;
             int dy = mb->position.y - m_mouseDownPos.y;
             if (std::abs(dx) < 3 && std::abs(dy) < 3) {
-                if (m_placementMode) {
+                if (m_buildMenu.isPlacementMode()) {
                     handleClick(mb->position);
                 } else {
                     handleEntityClick(mb->position);
@@ -388,6 +398,7 @@ void GameScene::handleInput(const sf::Event& event) {
     } else if (event.is<sf::Event::MouseMoved>()) {
         const auto& mm = event.getIf<sf::Event::MouseMoved>();
         m_mouseScreenPos = mm->position;
+        m_buildMenu.handleMouseMove(mm->position);
         if (m_dragging) {
             float dx = static_cast<float>(mm->position.x - m_lastMousePos.x);
             float dy = static_cast<float>(mm->position.y - m_lastMousePos.y);
@@ -416,14 +427,14 @@ void GameScene::placeInitialHeadquarters() {
 }
 
 void GameScene::handleClick(const sf::Vector2i& screenPos) {
-    if (!m_placementMode) {
+    if (!m_buildMenu.isPlacementMode()) {
         return;
     }
 
     sf::Vector2f worldPos = m_camera.screenToWorld(screenPos, m_windowSize);
     sf::Vector2i tilePos = m_tileMap.worldToTile(worldPos);
 
-    placeBuilding(m_selectedBuildingType, tilePos);
+    placeBuilding(m_buildMenu.getSelectedType(), tilePos);
 }
 
 void GameScene::recalculateProduction() {
@@ -539,8 +550,8 @@ void GameScene::handleEntityClick(const sf::Vector2i& screenPos) {
 }
 
 void GameScene::handleRightClick(const sf::Vector2i& screenPos) {
-    if (m_placementMode) {
-        m_placementMode = false;
+    if (m_buildMenu.isPlacementMode()) {
+        m_buildMenu.cancelPlacement();
         return;
     }
 

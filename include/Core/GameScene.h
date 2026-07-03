@@ -5,6 +5,7 @@
 #include "Event/EventBus.h"
 #include "Manager/SpawnManager.h"
 #include "Resource/ResourceManager.h"
+#include "UI/BuildMenu.h"
 #include "World/Camera.h"
 #include "World/TileMap.h"
 
@@ -50,8 +51,7 @@ private:
     std::vector<std::unique_ptr<Entity>> m_entities;
 
     // Building placement
-    bool m_placementMode = false;
-    BuildingType m_selectedBuildingType = BuildingType::Headquarters;
+    BuildMenu m_buildMenu;
 
     // Unit selection & enemy spawning
     int m_selectedEntityId = -1;

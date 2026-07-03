@@ -148,6 +148,7 @@
     <ClCompile Include="src\AI\StateMachine.cpp" />
     <ClCompile Include="src\AI\States.cpp" />
     <ClCompile Include="src\Manager\SpawnManager.cpp" />
+    <ClCompile Include="src\UI\BuildMenu.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h" />
@@ -176,6 +177,7 @@
     <ClInclude Include="include\AI\StateMachine.h" />
     <ClInclude Include="include\AI\States.h" />
     <ClInclude Include="include\Manager\SpawnManager.h" />
+    <ClInclude Include="include\UI\BuildMenu.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
