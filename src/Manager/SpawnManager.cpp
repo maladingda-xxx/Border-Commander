@@ -3,8 +3,8 @@
 #include <algorithm>
 
 SpawnManager::SpawnManager() {
-    m_timer = 5.0f; // initial prep time before wave 1
-    m_restDuration = 5.0f;
+    m_timer = 10.0f; // initial prep time before wave 1
+    m_restDuration = 10.0f;
 }
 
 void SpawnManager::update(float dt) {
@@ -87,7 +87,7 @@ void SpawnManager::startWave(int wave) {
     } else {
         m_totalEnemies = 10 + (wave - 4) * 2;
         m_spawnInterval = std::max(0.8f, 1.5f - (wave - 4) * 0.2f);
-        m_restDuration = 10.0f;
+        m_restDuration = 8.0f;
         m_hpBonus = 35 + (wave - 4) * 15;
         m_attackBonus = 6 + (wave - 4) * 3;
     }

@@ -24,11 +24,11 @@ BuildingInfo getBuildingInfo(BuildingType type) {
     case BuildingType::Headquarters:
         return {"HQ", sf::Color(255, 215, 0), 2, 2, 0, 0, 0.0f, 0.0f, 500};
     case BuildingType::Barracks:
-        return {"Barracks", sf::Color(220, 60, 60), 1, 1, 100, 20, 0.0f, 0.0f, 200};
+        return {"Barracks", sf::Color(220, 60, 60), 1, 1, 80, 15, 0.0f, 0.0f, 200};
     case BuildingType::Farm:
-        return {"Farm", sf::Color(154, 205, 50), 1, 1, 50, 0, 0.0f, 2.0f, 150};
+        return {"Farm", sf::Color(154, 205, 50), 1, 1, 50, 0, 0.0f, 1.5f, 150};
     case BuildingType::GoldMine:
-        return {"Mine", sf::Color(184, 134, 11), 1, 1, 50, 0, 1.0f, 0.0f, 150};
+        return {"Mine", sf::Color(184, 134, 11), 1, 1, 50, 0, 0.8f, 0.0f, 150};
     }
     return {};
 }

@@ -44,7 +44,7 @@ void GameScene::onEnter() {
     m_statsText = std::make_unique<sf::Text>(m_font, "", 20);
     m_statsText->setFillColor(sf::Color::White);
 
-    m_resourceManager.setMax(ResourceType::Population, 20);
+    m_resourceManager.setMax(ResourceType::Population, 15);
 
     m_audioManager.initialize(&m_eventBus);
 
@@ -639,7 +639,7 @@ void GameScene::resetGame() {
     m_spawnManager = SpawnManager();
     m_resourceManager = ResourceManager();
     m_resourceManager.setEventBus(&m_eventBus);
-    m_resourceManager.setMax(ResourceType::Population, 20);
+    m_resourceManager.setMax(ResourceType::Population, 15);
     m_selectedEntityId = -1;
     m_killCount = 0;
     m_buildingsBuilt = 0;

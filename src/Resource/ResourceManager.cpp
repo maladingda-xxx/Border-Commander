@@ -10,10 +10,10 @@ static size_t toIndex(ResourceType type) {
 }
 
 ResourceManager::ResourceManager() {
-    m_pools[toIndex(ResourceType::Gold)].current = 500;
+    m_pools[toIndex(ResourceType::Gold)].current = 300;
     m_pools[toIndex(ResourceType::Gold)].max = 500;
 
-    m_pools[toIndex(ResourceType::Food)].current = 300;
+    m_pools[toIndex(ResourceType::Food)].current = 200;
     m_pools[toIndex(ResourceType::Food)].max = 300;
 
     m_pools[toIndex(ResourceType::Population)].current = 0;

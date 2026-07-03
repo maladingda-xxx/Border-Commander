@@ -56,8 +56,8 @@ public:
     void render(sf::RenderWindow& window, const sf::Vector2f& worldPos, int tileSize) override;
 
 protected:
-    int m_hp = 50;
-    int m_maxHp = 50;
+    int m_hp = 60;
+    int m_maxHp = 60;
     int m_attack = 10;
     int m_defense = 5;
     float m_speed = 3.0f;

@@ -224,8 +224,8 @@ Soldier::Soldier()
 
 ResourceCost Soldier::getRecruitCost() {
     ResourceCost cost;
-    cost.set(ResourceType::Gold, 50);
-    cost.set(ResourceType::Food, 10);
+    cost.set(ResourceType::Gold, 40);
+    cost.set(ResourceType::Food, 5);
     return cost;
 }
 
