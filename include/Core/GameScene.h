@@ -3,6 +3,7 @@
 #include "Core/Scene.h"
 #include "Entity/BuildingTypes.h"
 #include "Event/EventBus.h"
+#include "Manager/AudioManager.h"
 #include "Manager/SpawnManager.h"
 #include "Resource/ResourceManager.h"
 #include "UI/BuildMenu.h"
@@ -48,6 +49,7 @@ private:
     sf::Vector2u m_windowSize{1024, 768};
 
     Event::EventBus m_eventBus;
+    AudioManager m_audioManager;
     ResourceManager m_resourceManager;
     std::vector<std::unique_ptr<Entity>> m_entities;
 

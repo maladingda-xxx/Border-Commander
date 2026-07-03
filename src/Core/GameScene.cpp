@@ -5,6 +5,7 @@
 #include "Entity/Building.h"
 #include "Entity/Entity.h"
 #include "Entity/Unit.h"
+#include "Event/Events.h"
 #include "UI/BuildMenu.h"
 
 #include <SFML/Graphics/RectangleShape.hpp>
@@ -45,10 +46,13 @@ void GameScene::onEnter() {
 
     m_resourceManager.setMax(ResourceType::Population, 20);
 
+    m_audioManager.initialize(&m_eventBus);
+
     placeInitialHeadquarters();
 }
 
 void GameScene::onExit() {
+    m_audioManager.shutdown();
     m_fpsText.reset();
     m_resourceText.reset();
     m_statusText.reset();
@@ -105,11 +109,15 @@ void GameScene::update(float dt) {
                         }
                         if (building->getBuildingType() == BuildingType::Headquarters) {
                             m_gameOver = true;
+                            m_eventBus.emit(Event::GameOverEvent{false});
                         }
                     }
                 }
                 if (dead && e->getId() == m_selectedEntityId) {
                     m_selectedEntityId = -1;
+                }
+                if (dead) {
+                    m_eventBus.emit(Event::EntityDestroyedEvent{e->getId()});
                 }
                 return dead;
             }),
@@ -120,6 +128,9 @@ void GameScene::update(float dt) {
         m_spawnManager.update(dt);
 
         if (m_spawnManager.shouldSpawn()) {
+            if (m_spawnManager.getSpawnedThisWave() == 0) {
+                m_eventBus.emit(Event::WaveStartEvent{m_spawnManager.getCurrentWave()});
+            }
             spawnEnemy();
             m_spawnManager.confirmSpawn();
         }
@@ -140,6 +151,7 @@ void GameScene::update(float dt) {
                 if (m_spawnManager.getCurrentWave() >= MAX_WAVES) {
                     m_victory = true;
                     m_gameOver = true;
+                    m_eventBus.emit(Event::GameOverEvent{true});
                 }
             }
         }
@@ -559,6 +571,7 @@ void GameScene::placeBuilding(BuildingType type, const sf::Vector2i& tilePos) {
 
     m_entities.push_back(std::move(building));
     ++m_buildingsBuilt;
+    m_eventBus.emit(Event::BuildingPlacedEvent{0, tilePos.x, tilePos.y});
 }
 
 bool GameScene::isTileOccupied(int x, int y) const {

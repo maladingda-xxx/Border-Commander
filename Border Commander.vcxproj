@@ -109,7 +109,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>C:\SFML-3\SFML-3.1.0\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>sfml-graphics-d.lib;sfml-window-d.lib;sfml-system-d.lib;sfml-audio-d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -148,6 +148,7 @@
     <ClCompile Include="src\AI\StateMachine.cpp" />
     <ClCompile Include="src\AI\States.cpp" />
     <ClCompile Include="src\Manager\SpawnManager.cpp" />
+    <ClCompile Include="src\Manager\AudioManager.cpp" />
     <ClCompile Include="src\UI\BuildMenu.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -177,6 +178,7 @@
     <ClInclude Include="include\AI\StateMachine.h" />
     <ClInclude Include="include\AI\States.h" />
     <ClInclude Include="include\Manager\SpawnManager.h" />
+    <ClInclude Include="include\Manager\AudioManager.h" />
     <ClInclude Include="include\UI\BuildMenu.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
