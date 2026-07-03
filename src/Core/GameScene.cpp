@@ -39,6 +39,9 @@ void GameScene::onEnter() {
     m_gameOverText->setFillColor(sf::Color::Red);
     m_gameOverText->setStyle(sf::Text::Bold);
 
+    m_statsText = std::make_unique<sf::Text>(m_font, "", 20);
+    m_statsText->setFillColor(sf::Color::White);
+
     m_resourceManager.setMax(ResourceType::Population, 20);
 
     placeInitialHeadquarters();
@@ -49,6 +52,7 @@ void GameScene::onExit() {
     m_resourceText.reset();
     m_statusText.reset();
     m_gameOverText.reset();
+    m_statsText.reset();
     m_entities.clear();
 }
 
@@ -58,7 +62,8 @@ void GameScene::update(float dt) {
     }
 
     if (m_gameOver) {
-        m_statusText->setString("GAME OVER - HQ destroyed");
+        m_statusText->setString(m_victory ? "VICTORY! Press R to restart"
+                                         : "DEFEAT - HQ destroyed. Press R to restart");
         return;
     }
 
@@ -131,6 +136,10 @@ void GameScene::update(float dt) {
             }
             if (!anyEnemyAlive) {
                 m_spawnManager.notifyWaveCleared();
+                if (m_spawnManager.getCurrentWave() >= MAX_WAVES) {
+                    m_victory = true;
+                    m_gameOver = true;
+                }
             }
         }
     }
@@ -328,13 +337,37 @@ void GameScene::render(sf::RenderWindow& window) {
     // Game over overlay
     if (m_gameOver) {
         sf::Vector2u winSize = window.getSize();
-        m_gameOverText->setString("GAME OVER");
+        float cx = static_cast<float>(winSize.x) / 2.0f;
+
+        if (m_victory) {
+            m_gameOverText->setString("VICTORY!");
+            m_gameOverText->setFillColor(sf::Color::Green);
+        } else {
+            m_gameOverText->setString("DEFEAT");
+            m_gameOverText->setFillColor(sf::Color::Red);
+        }
+
         sf::FloatRect bounds = m_gameOverText->getGlobalBounds();
         m_gameOverText->setPosition({
-            (static_cast<float>(winSize.x) - bounds.size.x) / 2.0f,
-            (static_cast<float>(winSize.y) - bounds.size.y) / 2.0f
+            cx - bounds.size.x / 2.0f,
+            static_cast<float>(winSize.y) * 0.25f
         });
         window.draw(*m_gameOverText);
+
+        std::ostringstream stats;
+        stats << "Waves Survived: " << m_spawnManager.getCurrentWave() << " / " << MAX_WAVES << "\n"
+              << "Enemies Killed:  " << m_killCount << "\n"
+              << "Buildings Built:  " << m_buildingsBuilt << "\n"
+              << "Final Gold:      " << m_resourceManager.getCurrent(ResourceType::Gold) << "\n\n"
+              << "Press R to Restart";
+        m_statsText->setString(stats.str());
+
+        sf::FloatRect sb = m_statsText->getGlobalBounds();
+        m_statsText->setPosition({
+            cx - sb.size.x / 2.0f,
+            static_cast<float>(winSize.y) * 0.45f
+        });
+        window.draw(*m_statsText);
     }
 }
 
@@ -362,6 +395,11 @@ void GameScene::handleInput(const sf::Event& event) {
         case sf::Keyboard::Key::Escape:
             m_buildMenu.cancelPlacement();
             m_selectedEntityId = -1;
+            break;
+        case sf::Keyboard::Key::R:
+            if (m_gameOver) {
+                resetGame();
+            }
             break;
         default:
             break;
@@ -509,6 +547,7 @@ void GameScene::placeBuilding(BuildingType type, const sf::Vector2i& tilePos) {
     }
 
     m_entities.push_back(std::move(building));
+    ++m_buildingsBuilt;
 }
 
 bool GameScene::isTileOccupied(int x, int y) const {
@@ -521,6 +560,8 @@ bool GameScene::isTileOccupied(int x, int y) const {
 // ─── Entity interaction ──────────────────────────────────────────────
 
 void GameScene::handleEntityClick(const sf::Vector2i& screenPos) {
+    if (m_gameOver) return;
+
     sf::Vector2f worldPos = m_camera.screenToWorld(screenPos, m_windowSize);
     sf::Vector2i tilePos = m_tileMap.worldToTile(worldPos);
 
@@ -566,6 +607,24 @@ void GameScene::handleRightClick(const sf::Vector2i& screenPos) {
 }
 
 // ─── Unit management ─────────────────────────────────────────────────
+
+void GameScene::resetGame() {
+    m_entities.clear();
+    m_tileMap = TileMap();
+    m_camera = Camera();
+    m_spawnManager = SpawnManager();
+    m_resourceManager = ResourceManager();
+    m_resourceManager.setEventBus(&m_eventBus);
+    m_resourceManager.setMax(ResourceType::Population, 20);
+    m_selectedEntityId = -1;
+    m_killCount = 0;
+    m_buildingsBuilt = 0;
+    m_gameOver = false;
+    m_victory = false;
+    m_buildMenu.cancelPlacement();
+    m_dragging = false;
+    placeInitialHeadquarters();
+}
 
 void GameScene::tryRecruitSoldier(Building* barracks) {
     ResourceCost cost = Soldier::getRecruitCost();

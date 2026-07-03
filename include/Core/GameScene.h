@@ -37,6 +37,7 @@ private:
     std::unique_ptr<sf::Text> m_resourceText;
     std::unique_ptr<sf::Text> m_statusText;
     std::unique_ptr<sf::Text> m_gameOverText;
+    std::unique_ptr<sf::Text> m_statsText;
 
     TileMap m_tileMap;
     Camera m_camera;
@@ -57,7 +58,10 @@ private:
     int m_selectedEntityId = -1;
     SpawnManager m_spawnManager;
     int m_killCount = 0;
+    int m_buildingsBuilt = 0;
     bool m_gameOver = false;
+    bool m_victory = false;
+    static constexpr int MAX_WAVES = 10;
 
     void placeInitialHeadquarters();
     void handleClick(const sf::Vector2i& screenPos);
@@ -68,6 +72,7 @@ private:
     void placeBuilding(BuildingType type, const sf::Vector2i& tilePos);
     bool isTileOccupied(int x, int y) const;
 
+    void resetGame();
     void tryRecruitSoldier(Building* barracks);
     void commandMove(const sf::Vector2i& tilePos);
     void spawnEnemy();
