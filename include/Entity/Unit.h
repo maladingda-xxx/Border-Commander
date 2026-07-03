@@ -69,6 +69,8 @@ protected:
     bool m_moving = false;
 
     float m_flashTimer = 0.0f;
+    float m_bobTimer = 0.0f;
+    float m_spawnTimer = 0.0f;
 
     std::unique_ptr<StateMachine> m_stateMachine;
     const std::vector<std::unique_ptr<Entity>>* m_entities = nullptr;

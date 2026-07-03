@@ -111,9 +111,8 @@ void Building::takeDamage(int dmg) {
 }
 
 void Building::update(float dt) {
-    if (m_flashTimer > 0.0f) {
-        m_flashTimer -= dt;
-    }
+    if (m_flashTimer > 0.0f) m_flashTimer -= dt;
+    if (m_spawnTimer < 1.0f) m_spawnTimer += dt / 0.3f;
     if (!isBuilt()) {
         addBuildProgress(dt);
     }
@@ -123,65 +122,59 @@ void Building::render(sf::RenderWindow& window, const sf::Vector2f& worldPos, in
     auto size = getSize();
     auto color = getColor();
 
-    sf::RectangleShape shape({
-        static_cast<float>(size.x * tileSize),
-        static_cast<float>(size.y * tileSize)
-    });
-    shape.setPosition(worldPos);
+    float spawnScale = std::min(1.0f, 0.2f + m_spawnTimer * 0.8f);
+    uint8_t alpha = static_cast<uint8_t>(std::min(1.0f, m_spawnTimer) * 255.0f);
+    color.a = static_cast<uint8_t>(color.a * alpha / 255);
+
+    float w = static_cast<float>(size.x * tileSize) * spawnScale;
+    float h = static_cast<float>(size.y * tileSize) * spawnScale;
+    float ox = (static_cast<float>(size.x * tileSize) - w) / 2.0f;
+    float oy = (static_cast<float>(size.y * tileSize) - h) / 2.0f;
+
+    sf::RectangleShape shape({w, h});
+    shape.setPosition({worldPos.x + ox, worldPos.y + oy});
     shape.setFillColor(color);
-
-    // Draw a darker border
-    shape.setOutlineColor(sf::Color(40, 40, 40));
+    shape.setOutlineColor(sf::Color(40, 40, 40, alpha));
     shape.setOutlineThickness(1.0f);
-
     window.draw(shape);
 
-    // Damage flash overlay
+    // Damage flash
     if (m_flashTimer > 0.0f) {
-        sf::RectangleShape flash({
-            static_cast<float>(size.x * tileSize),
-            static_cast<float>(size.y * tileSize)
-        });
-        flash.setPosition(worldPos);
+        sf::RectangleShape flash({w, h});
+        flash.setPosition({worldPos.x + ox, worldPos.y + oy});
         flash.setFillColor(sf::Color(255, 255, 255,
             static_cast<uint8_t>(m_flashTimer * 10.0f * 255.0f)));
         window.draw(flash);
     }
 
+    // Construction progress
     if (!isBuilt()) {
         float progress = m_buildProgress / BUILD_TIME;
-        sf::RectangleShape bar({
-            static_cast<float>(size.x * tileSize) * progress,
-            4.0f
-        });
-        bar.setPosition({worldPos.x, worldPos.y + size.y * tileSize - 4.0f});
-        bar.setFillColor(sf::Color::White);
+        sf::RectangleShape bar({w * progress, 4.0f});
+        bar.setPosition({worldPos.x + ox, worldPos.y + oy + h - 4.0f});
+        bar.setFillColor(sf::Color(255, 255, 255, alpha));
         window.draw(bar);
     }
 
-    // HP bar when damaged
-    if (m_hp < m_maxHp) {
-        float hpPercent = static_cast<float>(m_hp) / static_cast<float>(m_maxHp);
-        float barW = static_cast<float>(size.x * tileSize);
-        float barH = 4.0f;
+    // HP bar (always visible)
+    float hpPct = static_cast<float>(m_hp) / static_cast<float>(m_maxHp);
+    float barW = w;
+    float barH = 4.0f;
+    float barY = worldPos.y - barH - 2.0f;
 
-        sf::RectangleShape bg({barW, barH});
-        bg.setPosition({worldPos.x, worldPos.y - barH - 2.0f});
-        bg.setFillColor(sf::Color(40, 40, 40));
-        window.draw(bg);
+    sf::RectangleShape hpBg({barW, barH});
+    hpBg.setPosition({worldPos.x + ox, barY});
+    hpBg.setFillColor(sf::Color(40, 40, 40, alpha));
+    window.draw(hpBg);
 
-        sf::Color hpColor;
-        if (hpPercent > 0.5f) {
-            hpColor = sf::Color::Green;
-        } else if (hpPercent > 0.25f) {
-            hpColor = sf::Color::Yellow;
-        } else {
-            hpColor = sf::Color::Red;
-        }
+    sf::Color hpColor;
+    if (hpPct > 0.5f) hpColor = sf::Color::Green;
+    else if (hpPct > 0.25f) hpColor = sf::Color::Yellow;
+    else hpColor = sf::Color::Red;
+    hpColor.a = alpha;
 
-        sf::RectangleShape fill({barW * hpPercent, barH});
-        fill.setPosition({worldPos.x, worldPos.y - barH - 2.0f});
-        fill.setFillColor(hpColor);
-        window.draw(fill);
-    }
+    sf::RectangleShape hpFill({barW * hpPct, barH});
+    hpFill.setPosition({worldPos.x + ox, barY});
+    hpFill.setFillColor(hpColor);
+    window.draw(hpFill);
 }

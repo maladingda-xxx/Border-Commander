@@ -114,17 +114,14 @@ Entity* Unit::findNearestHostile(float range) const {
 }
 
 void Unit::update(float dt) {
-    // Flash timer
-    if (m_flashTimer > 0.0f) {
-        m_flashTimer -= dt;
-    }
+    if (m_flashTimer > 0.0f) m_flashTimer -= dt;
+    if (m_spawnTimer < 1.0f) m_spawnTimer += dt / 0.3f;
+    m_bobTimer += dt;
 
-    // Run AI state machine
     if (m_stateMachine) {
         m_stateMachine->update(dt);
     }
 
-    // Movement
     if (!m_moving) {
         return;
     }
@@ -155,65 +152,67 @@ void Unit::update(float dt) {
 }
 
 void Unit::render(sf::RenderWindow& window, const sf::Vector2f& /*worldPos*/, int tileSize) {
+    float spawnScale = std::min(1.0f, 0.2f + m_spawnTimer * 0.8f);
+    uint8_t spawnAlpha = static_cast<uint8_t>(std::min(1.0f, m_spawnTimer) * 255.0f);
+
     sf::Color color;
     if (m_faction == Faction::Player) {
-        color = sf::Color(60, 100, 255);
+        color = sf::Color(60, 100, 255, spawnAlpha);
     } else {
-        color = sf::Color(255, 60, 60);
+        color = sf::Color(255, 60, 60, spawnAlpha);
     }
 
+    float bobOffset = 0.0f;
+    if (m_moving) {
+        bobOffset = std::sin(m_bobTimer * 8.0f) * 3.0f;
+    }
+
+    float half = static_cast<float>(tileSize) * spawnScale / 2.0f;
     sf::Vector2f drawPos(
-        m_worldPos.x - static_cast<float>(tileSize) / 2.0f,
-        m_worldPos.y - static_cast<float>(tileSize) / 2.0f
+        m_worldPos.x - half,
+        m_worldPos.y - half + bobOffset
     );
 
     sf::RectangleShape shape({
-        static_cast<float>(tileSize),
-        static_cast<float>(tileSize)
+        static_cast<float>(tileSize) * spawnScale,
+        static_cast<float>(tileSize) * spawnScale
     });
     shape.setPosition(drawPos);
     shape.setFillColor(color);
-    shape.setOutlineColor(sf::Color(30, 30, 30));
+    shape.setOutlineColor(sf::Color(30, 30, 30, spawnAlpha));
     shape.setOutlineThickness(1.0f);
     window.draw(shape);
 
-    // Damage flash overlay
+    // Damage flash
     if (m_flashTimer > 0.0f) {
-        sf::RectangleShape flash({
-            static_cast<float>(tileSize),
-            static_cast<float>(tileSize)
-        });
+        sf::RectangleShape flash({shape.getSize().x, shape.getSize().y});
         flash.setPosition(drawPos);
         flash.setFillColor(sf::Color(255, 255, 255,
             static_cast<uint8_t>(m_flashTimer * 10.0f * 255.0f)));
         window.draw(flash);
     }
 
-    // HP bar
-    if (m_hp < m_maxHp) {
-        float hpPercent = static_cast<float>(m_hp) / static_cast<float>(m_maxHp);
-        float barWidth = static_cast<float>(tileSize);
-        float barHeight = 4.0f;
+    // HP bar (always visible)
+    float hpPct = static_cast<float>(m_hp) / static_cast<float>(m_maxHp);
+    float barW = static_cast<float>(tileSize);
+    float barH = 4.0f;
+    float barY = drawPos.y - barH - 2.0f;
 
-        sf::RectangleShape bg({barWidth, barHeight});
-        bg.setPosition({drawPos.x, drawPos.y - barHeight - 2.0f});
-        bg.setFillColor(sf::Color(40, 40, 40));
-        window.draw(bg);
+    sf::RectangleShape hpBg({barW, barH});
+    hpBg.setPosition({drawPos.x + (static_cast<float>(tileSize) * spawnScale - barW) / 2.0f, barY});
+    hpBg.setFillColor(sf::Color(40, 40, 40, spawnAlpha));
+    window.draw(hpBg);
 
-        sf::Color hpColor;
-        if (hpPercent > 0.5f) {
-            hpColor = sf::Color::Green;
-        } else if (hpPercent > 0.25f) {
-            hpColor = sf::Color::Yellow;
-        } else {
-            hpColor = sf::Color::Red;
-        }
+    sf::Color hpColor;
+    if (hpPct > 0.5f) hpColor = sf::Color::Green;
+    else if (hpPct > 0.25f) hpColor = sf::Color::Yellow;
+    else hpColor = sf::Color::Red;
+    hpColor.a = spawnAlpha;
 
-        sf::RectangleShape fill({barWidth * hpPercent, barHeight});
-        fill.setPosition({drawPos.x, drawPos.y - barHeight - 2.0f});
-        fill.setFillColor(hpColor);
-        window.draw(fill);
-    }
+    sf::RectangleShape hpFill({barW * hpPct, barH});
+    hpFill.setPosition({drawPos.x + (static_cast<float>(tileSize) * spawnScale - barW) / 2.0f, barY});
+    hpFill.setFillColor(hpColor);
+    window.draw(hpFill);
 }
 
 // ─── Soldier ─────────────────────────────────────────────────────────

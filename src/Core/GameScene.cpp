@@ -1,5 +1,6 @@
 #include "Core/GameScene.h"
 #include "Core/GameClock.h"
+#include "AI/StateMachine.h"
 #include "AI/States.h"
 #include "Entity/Building.h"
 #include "Entity/Entity.h"
@@ -239,6 +240,16 @@ void GameScene::render(sf::RenderWindow& window) {
             worldPos = m_tileMap.tileToWorld(entity->getTilePosition());
         }
         entity->render(window, worldPos, TileMap::TILE_SIZE);
+
+        // AI state label
+        if (auto* unit = dynamic_cast<Unit*>(entity.get())) {
+            sf::Text stateText(m_font, unit->getStateMachine()->getCurrentStateName(), 10);
+            stateText.setFillColor(sf::Color(180, 180, 180, 200));
+            float sx = worldPos.x - static_cast<float>(TileMap::TILE_SIZE) / 2.0f;
+            float sy = worldPos.y - static_cast<float>(TileMap::TILE_SIZE) / 2.0f - 14.0f;
+            stateText.setPosition({sx, sy});
+            window.draw(stateText);
+        }
 
         // Selection highlight
         if (entity->getId() == m_selectedEntityId) {

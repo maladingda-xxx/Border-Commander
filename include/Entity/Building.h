@@ -43,4 +43,5 @@ private:
     int m_hp = 0;
     int m_maxHp = 0;
     float m_flashTimer = 0.0f;
+    float m_spawnTimer = 0.0f;
 };
