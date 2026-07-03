@@ -34,6 +34,10 @@ void GameScene::onEnter() {
     m_statusText->setFillColor(sf::Color(200, 200, 200));
     m_statusText->setPosition({10.0f, 50.0f});
 
+    m_gameOverText = std::make_unique<sf::Text>(m_font, "", 48);
+    m_gameOverText->setFillColor(sf::Color::Red);
+    m_gameOverText->setStyle(sf::Text::Bold);
+
     m_resourceManager.setMax(ResourceType::Population, 20);
 
     placeInitialHeadquarters();
@@ -43,11 +47,17 @@ void GameScene::onExit() {
     m_fpsText.reset();
     m_resourceText.reset();
     m_statusText.reset();
+    m_gameOverText.reset();
     m_entities.clear();
 }
 
 void GameScene::update(float dt) {
     if (!m_fpsText) {
+        return;
+    }
+
+    if (m_gameOver) {
+        m_statusText->setString("GAME OVER - HQ destroyed");
         return;
     }
 
@@ -70,6 +80,14 @@ void GameScene::update(float dt) {
                 bool dead = false;
                 if (auto* unit = dynamic_cast<Unit*>(e.get())) {
                     dead = !unit->isAlive();
+                    if (dead) {
+                        if (auto* enemy = dynamic_cast<Enemy*>(e.get())) {
+                            m_resourceManager.addResource(ResourceType::Gold, enemy->getBounty());
+                            ++m_killCount;
+                        } else {
+                            m_resourceManager.addResource(ResourceType::Population, -1);
+                        }
+                    }
                 } else if (auto* building = dynamic_cast<Building*>(e.get())) {
                     dead = !building->isAlive();
                     if (dead) {
@@ -77,6 +95,9 @@ void GameScene::update(float dt) {
                             Tile t = m_tileMap.getTile(tile.x, tile.y);
                             t.occupied = false;
                             m_tileMap.setTile(tile.x, tile.y, t);
+                        }
+                        if (building->getBuildingType() == BuildingType::Headquarters) {
+                            m_gameOver = true;
                         }
                     }
                 }
@@ -88,10 +109,12 @@ void GameScene::update(float dt) {
         m_entities.end());
 
     // Enemy spawn timer
-    m_enemySpawnTimer += dt;
-    if (m_enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
-        m_enemySpawnTimer -= ENEMY_SPAWN_INTERVAL;
-        spawnEnemy();
+    if (!m_gameOver) {
+        m_enemySpawnTimer += dt;
+        if (m_enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+            m_enemySpawnTimer -= ENEMY_SPAWN_INTERVAL;
+            spawnEnemy();
+        }
     }
 
     // Status text
@@ -247,7 +270,8 @@ void GameScene::render(sf::RenderWindow& window) {
 
     // Resource HUD
     std::ostringstream resStr;
-    resStr << "Gold: " << m_resourceManager.getCurrent(ResourceType::Gold)
+    resStr << "Wave: " << m_waveCount << "  Kills: " << m_killCount
+           << "  |  Gold: " << m_resourceManager.getCurrent(ResourceType::Gold)
            << "/" << m_resourceManager.getMax(ResourceType::Gold)
            << "  Food: " << m_resourceManager.getCurrent(ResourceType::Food)
            << "/" << m_resourceManager.getMax(ResourceType::Food)
@@ -258,6 +282,18 @@ void GameScene::render(sf::RenderWindow& window) {
     window.draw(*m_resourceText);
     window.draw(*m_statusText);
     window.draw(*m_fpsText);
+
+    // Game over overlay
+    if (m_gameOver) {
+        sf::Vector2u winSize = window.getSize();
+        m_gameOverText->setString("GAME OVER");
+        sf::FloatRect bounds = m_gameOverText->getGlobalBounds();
+        m_gameOverText->setPosition({
+            (static_cast<float>(winSize.x) - bounds.size.x) / 2.0f,
+            (static_cast<float>(winSize.y) - bounds.size.y) / 2.0f
+        });
+        window.draw(*m_gameOverText);
+    }
 }
 
 void GameScene::handleInput(const sf::Event& event) {
@@ -511,6 +547,7 @@ void GameScene::tryRecruitSoldier(Building* barracks) {
     soldier->setWorldPos(m_tileMap.tileToWorld(spawnTile) +
         sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));
     soldier->setEntityList(&m_entities);
+    soldier->setEventBus(&m_eventBus);
 
     m_entities.push_back(std::move(soldier));
 }
@@ -557,6 +594,7 @@ void GameScene::spawnEnemy() {
     enemy->setWorldPos(m_tileMap.tileToWorld(spawnPos) +
         sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));
     enemy->setEntityList(&m_entities);
+    enemy->setEventBus(&m_eventBus);
 
     m_entities.push_back(std::move(enemy));
 }

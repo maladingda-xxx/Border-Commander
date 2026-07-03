@@ -34,6 +34,7 @@ private:
     std::unique_ptr<sf::Text> m_fpsText;
     std::unique_ptr<sf::Text> m_resourceText;
     std::unique_ptr<sf::Text> m_statusText;
+    std::unique_ptr<sf::Text> m_gameOverText;
 
     TileMap m_tileMap;
     Camera m_camera;
@@ -55,6 +56,8 @@ private:
     int m_selectedEntityId = -1;
     float m_enemySpawnTimer = 0.0f;
     int m_waveCount = 0;
+    int m_killCount = 0;
+    bool m_gameOver = false;
     static constexpr float ENEMY_SPAWN_INTERVAL = 10.0f;
 
     void placeInitialHeadquarters();

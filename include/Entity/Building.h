@@ -32,7 +32,7 @@ public:
     int getHP() const { return m_hp; }
     int getMaxHP() const { return m_maxHp; }
     bool isAlive() const { return m_hp > 0; }
-    void takeDamage(int dmg) { m_hp = std::max(0, m_hp - dmg); }
+    void takeDamage(int dmg);
 
     void update(float dt) override;
     void render(sf::RenderWindow& window, const sf::Vector2f& worldPos, int tileSize) override;
@@ -42,4 +42,5 @@ private:
     float m_buildProgress = 0.0f;
     int m_hp = 0;
     int m_maxHp = 0;
+    float m_flashTimer = 0.0f;
 };

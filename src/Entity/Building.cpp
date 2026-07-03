@@ -105,7 +105,15 @@ float Building::getProductionRate(ResourceType type) const {
     }
 }
 
+void Building::takeDamage(int dmg) {
+    m_hp = std::max(0, m_hp - dmg);
+    m_flashTimer = 0.1f;
+}
+
 void Building::update(float dt) {
+    if (m_flashTimer > 0.0f) {
+        m_flashTimer -= dt;
+    }
     if (!isBuilt()) {
         addBuildProgress(dt);
     }
@@ -127,6 +135,18 @@ void Building::render(sf::RenderWindow& window, const sf::Vector2f& worldPos, in
     shape.setOutlineThickness(1.0f);
 
     window.draw(shape);
+
+    // Damage flash overlay
+    if (m_flashTimer > 0.0f) {
+        sf::RectangleShape flash({
+            static_cast<float>(size.x * tileSize),
+            static_cast<float>(size.y * tileSize)
+        });
+        flash.setPosition(worldPos);
+        flash.setFillColor(sf::Color(255, 255, 255,
+            static_cast<uint8_t>(m_flashTimer * 10.0f * 255.0f)));
+        window.draw(flash);
+    }
 
     if (!isBuilt()) {
         float progress = m_buildProgress / BUILD_TIME;

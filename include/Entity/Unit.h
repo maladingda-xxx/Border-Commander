@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 
+namespace Event { class EventBus; }
 class Entity;
 struct ResourceCost;
 class StateMachine;
@@ -40,6 +41,9 @@ public:
     int getAttack() const { return m_attack; }
     int getDefense() const { return m_defense; }
 
+    // Event
+    void setEventBus(Event::EventBus* bus) { m_eventBus = bus; }
+
     // AI
     StateMachine* getStateMachine() { return m_stateMachine.get(); }
     void setEntityList(const std::vector<std::unique_ptr<Entity>>* list) { m_entities = list; }
@@ -64,8 +68,11 @@ protected:
     sf::Vector2i m_targetTile;
     bool m_moving = false;
 
+    float m_flashTimer = 0.0f;
+
     std::unique_ptr<StateMachine> m_stateMachine;
     const std::vector<std::unique_ptr<Entity>>* m_entities = nullptr;
+    Event::EventBus* m_eventBus = nullptr;
 };
 
 class Soldier : public Unit {

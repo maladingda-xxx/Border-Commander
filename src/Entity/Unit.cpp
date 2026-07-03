@@ -2,6 +2,8 @@
 #include "AI/StateMachine.h"
 #include "AI/States.h"
 #include "Entity/Building.h"
+#include "Event/EventBus.h"
+#include "Event/Events.h"
 #include "Resource/ResourceCost.h"
 #include "World/TileMap.h"
 
@@ -42,6 +44,11 @@ void Unit::stop() {
 
 void Unit::takeDamage(int dmg) {
     m_hp = std::max(0, m_hp - dmg);
+    m_flashTimer = 0.1f;
+
+    if (m_eventBus) {
+        m_eventBus->emit(Event::CombatEvent{-1, getId(), dmg});
+    }
 }
 
 void Unit::commandMoveTo(const sf::Vector2i& tile) {
@@ -107,6 +114,11 @@ Entity* Unit::findNearestHostile(float range) const {
 }
 
 void Unit::update(float dt) {
+    // Flash timer
+    if (m_flashTimer > 0.0f) {
+        m_flashTimer -= dt;
+    }
+
     // Run AI state machine
     if (m_stateMachine) {
         m_stateMachine->update(dt);
@@ -164,6 +176,18 @@ void Unit::render(sf::RenderWindow& window, const sf::Vector2f& /*worldPos*/, in
     shape.setOutlineColor(sf::Color(30, 30, 30));
     shape.setOutlineThickness(1.0f);
     window.draw(shape);
+
+    // Damage flash overlay
+    if (m_flashTimer > 0.0f) {
+        sf::RectangleShape flash({
+            static_cast<float>(tileSize),
+            static_cast<float>(tileSize)
+        });
+        flash.setPosition(drawPos);
+        flash.setFillColor(sf::Color(255, 255, 255,
+            static_cast<uint8_t>(m_flashTimer * 10.0f * 255.0f)));
+        window.draw(flash);
+    }
 
     // HP bar
     if (m_hp < m_maxHp) {
