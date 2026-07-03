@@ -108,12 +108,29 @@ void GameScene::update(float dt) {
             }),
         m_entities.end());
 
-    // Enemy spawn timer
+    // Wave spawning
     if (!m_gameOver) {
-        m_enemySpawnTimer += dt;
-        if (m_enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
-            m_enemySpawnTimer -= ENEMY_SPAWN_INTERVAL;
+        m_spawnManager.update(dt);
+
+        if (m_spawnManager.shouldSpawn()) {
             spawnEnemy();
+            m_spawnManager.confirmSpawn();
+        }
+
+        // Check if wave is cleared
+        if (m_spawnManager.getState() == WaveState::AwaitingClear) {
+            bool anyEnemyAlive = false;
+            for (auto& e : m_entities) {
+                if (auto* enemy = dynamic_cast<Enemy*>(e.get())) {
+                    if (enemy->isActive() && enemy->isAlive()) {
+                        anyEnemyAlive = true;
+                        break;
+                    }
+                }
+            }
+            if (!anyEnemyAlive) {
+                m_spawnManager.notifyWaveCleared();
+            }
         }
     }
 
@@ -129,8 +146,25 @@ void GameScene::update(float dt) {
         m_statusText->setString(status.str());
     } else if (m_selectedEntityId >= 0) {
         m_statusText->setString("Unit selected | Right-click to move | 1-4: Build | Drag: Pan");
+    } else if (m_spawnManager.getCurrentWave() == 0) {
+        std::ostringstream status;
+        status << "Prepare! First wave in " << static_cast<int>(m_spawnManager.getRestTimeRemaining()) << "s";
+        m_statusText->setString(status.str());
     } else {
-        m_statusText->setString("Left-click: Select/Recruit | 1-4: Build | Drag: Pan");
+        std::ostringstream status;
+        auto state = m_spawnManager.getState();
+        int wave = m_spawnManager.getCurrentWave();
+        if (state == WaveState::Resting) {
+            status << "Wave " << wave << " cleared! Next in "
+                   << static_cast<int>(m_spawnManager.getRestTimeRemaining()) << "s";
+        } else if (state == WaveState::Spawning) {
+            status << "Wave " << wave << ": "
+                   << m_spawnManager.getSpawnedThisWave() << "/"
+                   << m_spawnManager.getTotalEnemiesThisWave() << " spawned";
+        } else {
+            status << "Wave " << wave << ": clear remaining enemies";
+        }
+        m_statusText->setString(status.str());
     }
 }
 
@@ -270,7 +304,7 @@ void GameScene::render(sf::RenderWindow& window) {
 
     // Resource HUD
     std::ostringstream resStr;
-    resStr << "Wave: " << m_waveCount << "  Kills: " << m_killCount
+    resStr << "Wave: " << m_spawnManager.getCurrentWave() << "  Kills: " << m_killCount
            << "  |  Gold: " << m_resourceManager.getCurrent(ResourceType::Gold)
            << "/" << m_resourceManager.getMax(ResourceType::Gold)
            << "  Food: " << m_resourceManager.getCurrent(ResourceType::Food)
@@ -586,10 +620,11 @@ void GameScene::spawnEnemy() {
     std::uniform_int_distribution<size_t> dist(0, edgeTiles.size() - 1);
     auto spawnPos = edgeTiles[dist(rng)];
 
-    ++m_waveCount;
+    int wave = m_spawnManager.getCurrentWave();
 
     sf::Vector2i hqTarget(14, 8);
-    auto enemy = std::make_unique<Enemy>(m_waveCount, hqTarget);
+    auto enemy = std::make_unique<Enemy>(wave, hqTarget,
+        m_spawnManager.getHPBonus(), m_spawnManager.getAttackBonus());
     enemy->setTilePosition(spawnPos);
     enemy->setWorldPos(m_tileMap.tileToWorld(spawnPos) +
         sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));

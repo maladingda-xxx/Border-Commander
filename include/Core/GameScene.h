@@ -3,6 +3,7 @@
 #include "Core/Scene.h"
 #include "Entity/BuildingTypes.h"
 #include "Event/EventBus.h"
+#include "Manager/SpawnManager.h"
 #include "Resource/ResourceManager.h"
 #include "World/Camera.h"
 #include "World/TileMap.h"
@@ -54,11 +55,9 @@ private:
 
     // Unit selection & enemy spawning
     int m_selectedEntityId = -1;
-    float m_enemySpawnTimer = 0.0f;
-    int m_waveCount = 0;
+    SpawnManager m_spawnManager;
     int m_killCount = 0;
     bool m_gameOver = false;
-    static constexpr float ENEMY_SPAWN_INTERVAL = 10.0f;
 
     void placeInitialHeadquarters();
     void handleClick(const sf::Vector2i& screenPos);

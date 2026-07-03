@@ -69,6 +69,9 @@
     <ClCompile Include="src\AI\States.cpp">
       <Filter>AI</Filter>
     </ClCompile>
+    <ClCompile Include="src\Manager\SpawnManager.cpp">
+      <Filter>Manager</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h">
@@ -146,6 +149,9 @@
     <ClInclude Include="include\AI\States.h">
       <Filter>AI</Filter>
     </ClInclude>
+    <ClInclude Include="include\Manager\SpawnManager.h">
+      <Filter>Manager</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resource">
@@ -162,6 +168,9 @@
     </Filter>
     <Filter Include="AI">
       <UniqueIdentifier>{E5F6A7B8-C9D0-1234-EFGH-345678901234}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Manager">
+      <UniqueIdentifier>{F6A7B8C9-D0E1-2345-FGHI-456789012345}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

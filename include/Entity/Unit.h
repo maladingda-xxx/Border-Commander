@@ -83,7 +83,7 @@ public:
 
 class Enemy : public Unit {
 public:
-    Enemy(int wave, const sf::Vector2i& targetTile);
+    Enemy(int wave, const sf::Vector2i& targetTile, int hpBonus = 0, int atkBonus = 0);
     int getWaveNumber() const { return m_waveNumber; }
     int getBounty() const { return m_bounty; }
 

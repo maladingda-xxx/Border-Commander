@@ -232,10 +232,12 @@ ResourceCost Soldier::getRecruitCost() {
 
 // ─── Enemy ───────────────────────────────────────────────────────────
 
-Enemy::Enemy(int wave, const sf::Vector2i& targetTile)
+Enemy::Enemy(int wave, const sf::Vector2i& targetTile, int hpBonus, int atkBonus)
     : Unit(Faction::Enemy)
     , m_waveNumber(wave)
     , m_bounty(25 + wave * 5) {
-    // Start moving toward target (HQ) using FSM
+    m_hp += hpBonus;
+    m_maxHp += hpBonus;
+    m_attack += atkBonus;
     m_stateMachine->changeState(std::make_unique<MoveToState>(targetTile));
 }
