@@ -1,0 +1,33 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sdf
+*.opendb
+*.db
+
+# Build outputs
+x64/
+Debug/
+Release/
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+*.obj
+*.tlog
+*.recipe
+*.log
+*.applocal.log
+*.idb
+*.ipdb
+*.iobj
+*.ipch
+
+# Claude Code
+.claude/
+
+# OS
+.DS_Store
+Thumbs.db
