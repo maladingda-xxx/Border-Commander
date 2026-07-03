@@ -63,6 +63,12 @@
     <ClCompile Include="src\Entity\Unit.cpp">
       <Filter>Entity</Filter>
     </ClCompile>
+    <ClCompile Include="src\AI\StateMachine.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AI\States.cpp">
+      <Filter>AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h">
@@ -131,6 +137,15 @@
     <ClInclude Include="include\Entity\Unit.h">
       <Filter>Entity</Filter>
     </ClInclude>
+    <ClInclude Include="include\AI\IState.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AI\StateMachine.h">
+      <Filter>AI</Filter>
+    </ClInclude>
+    <ClInclude Include="include\AI\States.h">
+      <Filter>AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resource">
@@ -144,6 +159,9 @@
     </Filter>
     <Filter Include="Entity">
       <UniqueIdentifier>{D4E5F6A7-B8C9-0123-DEFG-234567890123}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AI">
+      <UniqueIdentifier>{E5F6A7B8-C9D0-1234-EFGH-345678901234}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

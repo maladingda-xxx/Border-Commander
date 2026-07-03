@@ -145,6 +145,8 @@
     <ClCompile Include="src\Entity\Entity.cpp" />
     <ClCompile Include="src\Entity\Building.cpp" />
     <ClCompile Include="src\Entity\Unit.cpp" />
+    <ClCompile Include="src\AI\StateMachine.cpp" />
+    <ClCompile Include="src\AI\States.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h" />
@@ -169,6 +171,9 @@
     <ClInclude Include="include\Entity\BuildingTypes.h" />
     <ClInclude Include="include\Entity\Building.h" />
     <ClInclude Include="include\Entity\Unit.h" />
+    <ClInclude Include="include\AI\IState.h" />
+    <ClInclude Include="include\AI\StateMachine.h" />
+    <ClInclude Include="include\AI\States.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

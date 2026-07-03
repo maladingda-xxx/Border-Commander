@@ -1,5 +1,6 @@
 #include "Core/GameScene.h"
 #include "Core/GameClock.h"
+#include "AI/States.h"
 #include "Entity/Building.h"
 #include "Entity/Entity.h"
 #include "Entity/Unit.h"
@@ -61,6 +62,30 @@ void GameScene::update(float dt) {
     }
 
     recalculateProduction();
+
+    // Clean up dead entities
+    m_entities.erase(
+        std::remove_if(m_entities.begin(), m_entities.end(),
+            [this](const std::unique_ptr<Entity>& e) {
+                bool dead = false;
+                if (auto* unit = dynamic_cast<Unit*>(e.get())) {
+                    dead = !unit->isAlive();
+                } else if (auto* building = dynamic_cast<Building*>(e.get())) {
+                    dead = !building->isAlive();
+                    if (dead) {
+                        for (const auto& tile : building->getOccupiedTiles()) {
+                            Tile t = m_tileMap.getTile(tile.x, tile.y);
+                            t.occupied = false;
+                            m_tileMap.setTile(tile.x, tile.y, t);
+                        }
+                    }
+                }
+                if (dead && e->getId() == m_selectedEntityId) {
+                    m_selectedEntityId = -1;
+                }
+                return dead;
+            }),
+        m_entities.end());
 
     // Enemy spawn timer
     m_enemySpawnTimer += dt;
@@ -485,6 +510,7 @@ void GameScene::tryRecruitSoldier(Building* barracks) {
     soldier->setTilePosition(spawnTile);
     soldier->setWorldPos(m_tileMap.tileToWorld(spawnTile) +
         sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));
+    soldier->setEntityList(&m_entities);
 
     m_entities.push_back(std::move(soldier));
 }
@@ -497,7 +523,7 @@ void GameScene::commandMove(const sf::Vector2i& tilePos) {
     for (auto& entity : m_entities) {
         if (entity->getId() == m_selectedEntityId) {
             if (auto* unit = dynamic_cast<Unit*>(entity.get())) {
-                unit->setTarget(tilePos);
+                unit->commandMoveTo(tilePos);
             }
             break;
         }
@@ -530,6 +556,7 @@ void GameScene::spawnEnemy() {
     enemy->setTilePosition(spawnPos);
     enemy->setWorldPos(m_tileMap.tileToWorld(spawnPos) +
         sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));
+    enemy->setEntityList(&m_entities);
 
     m_entities.push_back(std::move(enemy));
 }

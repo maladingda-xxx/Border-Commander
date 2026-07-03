@@ -16,18 +16,19 @@ struct BuildingInfo {
     int foodCost;
     float goldProduction;
     float foodProduction;
+    int maxHp;
 };
 
 BuildingInfo getBuildingInfo(BuildingType type) {
     switch (type) {
     case BuildingType::Headquarters:
-        return {"HQ", sf::Color(255, 215, 0), 2, 2, 0, 0, 0.0f, 0.0f};
+        return {"HQ", sf::Color(255, 215, 0), 2, 2, 0, 0, 0.0f, 0.0f, 500};
     case BuildingType::Barracks:
-        return {"Barracks", sf::Color(220, 60, 60), 1, 1, 100, 20, 0.0f, 0.0f};
+        return {"Barracks", sf::Color(220, 60, 60), 1, 1, 100, 20, 0.0f, 0.0f, 200};
     case BuildingType::Farm:
-        return {"Farm", sf::Color(154, 205, 50), 1, 1, 50, 0, 0.0f, 2.0f};
+        return {"Farm", sf::Color(154, 205, 50), 1, 1, 50, 0, 0.0f, 2.0f, 150};
     case BuildingType::GoldMine:
-        return {"Mine", sf::Color(184, 134, 11), 1, 1, 50, 0, 1.0f, 0.0f};
+        return {"Mine", sf::Color(184, 134, 11), 1, 1, 50, 0, 1.0f, 0.0f, 150};
     }
     return {};
 }
@@ -36,8 +37,11 @@ BuildingInfo getBuildingInfo(BuildingType type) {
 
 Building::Building(BuildingType type)
     : m_type(type) {
+    auto info = getBuildingInfo(type);
+    m_hp = info.maxHp;
+    m_maxHp = info.maxHp;
     if (type == BuildingType::Headquarters) {
-        m_buildProgress = BUILD_TIME; // HQ starts fully built
+        m_buildProgress = BUILD_TIME;
     }
 }
 
@@ -133,5 +137,31 @@ void Building::render(sf::RenderWindow& window, const sf::Vector2f& worldPos, in
         bar.setPosition({worldPos.x, worldPos.y + size.y * tileSize - 4.0f});
         bar.setFillColor(sf::Color::White);
         window.draw(bar);
+    }
+
+    // HP bar when damaged
+    if (m_hp < m_maxHp) {
+        float hpPercent = static_cast<float>(m_hp) / static_cast<float>(m_maxHp);
+        float barW = static_cast<float>(size.x * tileSize);
+        float barH = 4.0f;
+
+        sf::RectangleShape bg({barW, barH});
+        bg.setPosition({worldPos.x, worldPos.y - barH - 2.0f});
+        bg.setFillColor(sf::Color(40, 40, 40));
+        window.draw(bg);
+
+        sf::Color hpColor;
+        if (hpPercent > 0.5f) {
+            hpColor = sf::Color::Green;
+        } else if (hpPercent > 0.25f) {
+            hpColor = sf::Color::Yellow;
+        } else {
+            hpColor = sf::Color::Red;
+        }
+
+        sf::RectangleShape fill({barW * hpPercent, barH});
+        fill.setPosition({worldPos.x, worldPos.y - barH - 2.0f});
+        fill.setFillColor(hpColor);
+        window.draw(fill);
     }
 }

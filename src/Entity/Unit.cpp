@@ -1,4 +1,7 @@
 #include "Entity/Unit.h"
+#include "AI/StateMachine.h"
+#include "AI/States.h"
+#include "Entity/Building.h"
 #include "Resource/ResourceCost.h"
 #include "World/TileMap.h"
 
@@ -13,6 +16,7 @@
 Unit::Unit(Faction faction)
     : m_faction(faction)
     , m_worldPos(0.0f, 0.0f) {
+    m_stateMachine = std::make_unique<StateMachine>(this);
 }
 
 void Unit::setTarget(const sf::Vector2i& tile) {
@@ -37,11 +41,78 @@ void Unit::stop() {
 }
 
 void Unit::takeDamage(int dmg) {
-    int actualDmg = std::max(1, dmg - m_defense);
-    m_hp = std::max(0, m_hp - actualDmg);
+    m_hp = std::max(0, m_hp - dmg);
+}
+
+void Unit::commandMoveTo(const sf::Vector2i& tile) {
+    m_stateMachine->changeState(std::make_unique<MoveToState>(tile));
+}
+
+sf::Vector2i Unit::worldToTile(const sf::Vector2f& worldPos) const {
+    return {
+        static_cast<int>(worldPos.x / TileMap::TILE_SIZE),
+        static_cast<int>(worldPos.y / TileMap::TILE_SIZE)
+    };
+}
+
+Entity* Unit::findNearestHostile(float range) const {
+    if (!m_entities) {
+        return nullptr;
+    }
+
+    sf::Vector2f myPos = m_worldPos;
+    Entity* nearest = nullptr;
+    float nearestDist = range * static_cast<float>(TileMap::TILE_SIZE);
+
+    for (auto& entity : *m_entities) {
+        if (!entity->isActive() || entity.get() == this) {
+            continue;
+        }
+
+        bool hostile = false;
+        if (auto* otherUnit = dynamic_cast<Unit*>(entity.get())) {
+            hostile = (m_faction != otherUnit->getFaction());
+        } else if (dynamic_cast<Building*>(entity.get())) {
+            // Enemies are hostile to all player buildings
+            hostile = (m_faction == Faction::Enemy);
+        }
+
+        if (!hostile) {
+            continue;
+        }
+
+        // Get entity position
+        sf::Vector2f otherPos;
+        if (auto* otherUnit = dynamic_cast<Unit*>(entity.get())) {
+            otherPos = otherUnit->getWorldPos();
+        } else {
+            // Building center
+            otherPos = {
+                static_cast<float>(entity->getTilePosition().x * TileMap::TILE_SIZE + TileMap::TILE_SIZE / 2),
+                static_cast<float>(entity->getTilePosition().y * TileMap::TILE_SIZE + TileMap::TILE_SIZE / 2)
+            };
+        }
+
+        float dx = otherPos.x - myPos.x;
+        float dy = otherPos.y - myPos.y;
+        float dist = std::sqrt(dx * dx + dy * dy);
+
+        if (dist < nearestDist) {
+            nearestDist = dist;
+            nearest = entity.get();
+        }
+    }
+
+    return nearest;
 }
 
 void Unit::update(float dt) {
+    // Run AI state machine
+    if (m_stateMachine) {
+        m_stateMachine->update(dt);
+    }
+
+    // Movement
     if (!m_moving) {
         return;
     }
@@ -79,7 +150,6 @@ void Unit::render(sf::RenderWindow& window, const sf::Vector2f& /*worldPos*/, in
         color = sf::Color(255, 60, 60);
     }
 
-    // Use m_worldPos for rendering (smooth position)
     sf::Vector2f drawPos(
         m_worldPos.x - static_cast<float>(tileSize) / 2.0f,
         m_worldPos.y - static_cast<float>(tileSize) / 2.0f
@@ -126,6 +196,7 @@ void Unit::render(sf::RenderWindow& window, const sf::Vector2f& /*worldPos*/, in
 
 Soldier::Soldier()
     : Unit(Faction::Player) {
+    m_stateMachine->changeState(std::make_unique<IdleState>());
 }
 
 ResourceCost Soldier::getRecruitCost() {
@@ -141,5 +212,6 @@ Enemy::Enemy(int wave, const sf::Vector2i& targetTile)
     : Unit(Faction::Enemy)
     , m_waveNumber(wave)
     , m_bounty(25 + wave * 5) {
-    setTarget(targetTile);
+    // Start moving toward target (HQ) using FSM
+    m_stateMachine->changeState(std::make_unique<MoveToState>(targetTile));
 }
