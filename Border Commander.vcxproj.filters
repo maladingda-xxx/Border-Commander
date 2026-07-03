@@ -45,6 +45,15 @@
     <ClCompile Include="src\Event\EventBus.cpp">
       <Filter>Event</Filter>
     </ClCompile>
+    <ClCompile Include="src\World\TileMap.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="src\World\Camera.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
+    <ClCompile Include="src\World\Pathfinder.cpp">
+      <Filter>World</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h">
@@ -89,6 +98,18 @@
     <ClInclude Include="include\Event\Events.h">
       <Filter>Event</Filter>
     </ClInclude>
+    <ClInclude Include="include\World\Tile.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="include\World\TileMap.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="include\World\Camera.h">
+      <Filter>World</Filter>
+    </ClInclude>
+    <ClInclude Include="include\World\Pathfinder.h">
+      <Filter>World</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Resource">
@@ -96,6 +117,9 @@
     </Filter>
     <Filter Include="Event">
       <UniqueIdentifier>{B2C3D4E5-F6A7-8901-BCDE-F12345678901}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="World">
+      <UniqueIdentifier>{C3D4E5F6-A7B8-9012-CDEF-123456789012}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

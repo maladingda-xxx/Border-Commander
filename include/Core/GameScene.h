@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Core/Scene.h"
+#include "World/Camera.h"
+#include "World/TileMap.h"
 
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
@@ -23,4 +25,9 @@ private:
     const GameClock* m_clock;
     sf::Font m_font;
     std::unique_ptr<sf::Text> m_fpsText;
+
+    TileMap m_tileMap;
+    Camera m_camera;
+    bool m_dragging = false;
+    sf::Vector2i m_lastMousePos;
 };
