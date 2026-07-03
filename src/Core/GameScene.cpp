@@ -2,11 +2,13 @@
 #include "Core/GameClock.h"
 #include "Entity/Building.h"
 #include "Entity/Entity.h"
+#include "Entity/Unit.h"
 
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
 
+#include <random>
 #include <sstream>
 
 GameScene::GameScene(const GameClock* clock)
@@ -30,6 +32,8 @@ void GameScene::onEnter() {
     m_statusText = std::make_unique<sf::Text>(m_font, "", 16);
     m_statusText->setFillColor(sf::Color(200, 200, 200));
     m_statusText->setPosition({10.0f, 50.0f});
+
+    m_resourceManager.setMax(ResourceType::Population, 20);
 
     placeInitialHeadquarters();
 }
@@ -58,7 +62,14 @@ void GameScene::update(float dt) {
 
     recalculateProduction();
 
-    // Update status text
+    // Enemy spawn timer
+    m_enemySpawnTimer += dt;
+    if (m_enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+        m_enemySpawnTimer -= ENEMY_SPAWN_INTERVAL;
+        spawnEnemy();
+    }
+
+    // Status text
     if (m_placementMode) {
         Building tempBuilding(m_selectedBuildingType);
         auto cost = tempBuilding.getCost();
@@ -68,8 +79,10 @@ void GameScene::update(float dt) {
                << " Food: " << cost.get(ResourceType::Food)
                << ") | Right-click to cancel";
         m_statusText->setString(status.str());
+    } else if (m_selectedEntityId >= 0) {
+        m_statusText->setString("Unit selected | Right-click to move | 1-4: Build | Drag: Pan");
     } else {
-        m_statusText->setString("1-4: Build | Drag: Pan");
+        m_statusText->setString("Left-click: Select/Recruit | 1-4: Build | Drag: Pan");
     }
 }
 
@@ -106,7 +119,6 @@ void GameScene::render(sf::RenderWindow& window) {
 
             window.draw(tileRect);
 
-            // Darken occupied tiles
             if (tile.occupied) {
                 sf::RectangleShape overlay({
                     static_cast<float>(TileMap::TILE_SIZE),
@@ -121,13 +133,65 @@ void GameScene::render(sf::RenderWindow& window) {
 
     // Draw entities
     for (auto& entity : m_entities) {
-        if (entity->isActive()) {
-            sf::Vector2f worldPos = m_tileMap.tileToWorld(entity->getTilePosition());
-            entity->render(window, worldPos, TileMap::TILE_SIZE);
+        if (!entity->isActive()) {
+            continue;
+        }
+
+        // Units render at their smooth world position; buildings render at tile-aligned position
+        sf::Vector2f worldPos;
+        if (auto* unit = dynamic_cast<Unit*>(entity.get())) {
+            worldPos = unit->getWorldPos();
+        } else {
+            worldPos = m_tileMap.tileToWorld(entity->getTilePosition());
+        }
+        entity->render(window, worldPos, TileMap::TILE_SIZE);
+
+        // Selection highlight
+        if (entity->getId() == m_selectedEntityId) {
+            float size = static_cast<float>(TileMap::TILE_SIZE);
+            sf::Vector2f drawPos = worldPos;
+            // Re-center for units (which render centered on worldPos)
+            if (dynamic_cast<Unit*>(entity.get())) {
+                drawPos = {worldPos.x - size / 2.0f, worldPos.y - size / 2.0f};
+            }
+
+            sf::RectangleShape outline({size, size});
+            outline.setPosition(drawPos);
+            outline.setFillColor(sf::Color(0, 0, 0, 0));
+            outline.setOutlineColor(sf::Color::White);
+            outline.setOutlineThickness(2.0f);
+            window.draw(outline);
         }
     }
 
-    // Draw placement preview
+    // Target crosshair for selected unit
+    if (m_selectedEntityId >= 0) {
+        for (auto& entity : m_entities) {
+            if (entity->getId() == m_selectedEntityId) {
+                if (auto* unit = dynamic_cast<Unit*>(entity.get())) {
+                    if (unit->isMoving()) {
+                        sf::Vector2f targetPos = m_tileMap.tileToWorld(unit->getTargetTile());
+                        float ts = static_cast<float>(TileMap::TILE_SIZE);
+
+                        // Horizontal line
+                        sf::RectangleShape hLine({ts * 0.6f, 2.0f});
+                        hLine.setPosition({targetPos.x + ts * 0.2f, targetPos.y + ts / 2.0f});
+                        hLine.setFillColor(sf::Color(255, 255, 255, 180));
+                        window.draw(hLine);
+
+                        // Vertical line
+                        sf::RectangleShape vLine({2.0f, ts * 0.6f});
+                        vLine.setPosition({targetPos.x + ts / 2.0f, targetPos.y + ts * 0.2f});
+                        vLine.setFillColor(sf::Color(255, 255, 255, 180));
+                        window.draw(vLine);
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    // Placement preview
     if (m_placementMode) {
         sf::Vector2f worldPos = m_camera.screenToWorld(m_mouseScreenPos, m_windowSize);
         sf::Vector2i hoveredTile = m_tileMap.worldToTile(worldPos);
@@ -179,21 +243,26 @@ void GameScene::handleInput(const sf::Event& event) {
         case sf::Keyboard::Key::Num1:
             m_placementMode = true;
             m_selectedBuildingType = BuildingType::Headquarters;
+            m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Num2:
             m_placementMode = true;
             m_selectedBuildingType = BuildingType::Barracks;
+            m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Num3:
             m_placementMode = true;
             m_selectedBuildingType = BuildingType::Farm;
+            m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Num4:
             m_placementMode = true;
             m_selectedBuildingType = BuildingType::GoldMine;
+            m_selectedEntityId = -1;
             break;
         case sf::Keyboard::Key::Escape:
             m_placementMode = false;
+            m_selectedEntityId = -1;
             break;
         default:
             break;
@@ -205,7 +274,7 @@ void GameScene::handleInput(const sf::Event& event) {
             m_lastMousePos = mb->position;
             m_mouseDownPos = mb->position;
         } else if (mb->button == sf::Mouse::Button::Right) {
-            m_placementMode = false;
+            handleRightClick(mb->position);
         }
     } else if (event.is<sf::Event::MouseButtonReleased>()) {
         const auto& mb = event.getIf<sf::Event::MouseButtonReleased>();
@@ -214,7 +283,11 @@ void GameScene::handleInput(const sf::Event& event) {
             int dx = mb->position.x - m_mouseDownPos.x;
             int dy = mb->position.y - m_mouseDownPos.y;
             if (std::abs(dx) < 3 && std::abs(dy) < 3) {
-                handleClick(mb->position);
+                if (m_placementMode) {
+                    handleClick(mb->position);
+                } else {
+                    handleEntityClick(mb->position);
+                }
             }
         }
     } else if (event.is<sf::Event::MouseMoved>()) {
@@ -228,6 +301,8 @@ void GameScene::handleInput(const sf::Event& event) {
         }
     }
 }
+
+// ─── Building placement ──────────────────────────────────────────────
 
 void GameScene::placeInitialHeadquarters() {
     int hqX = 14;
@@ -335,4 +410,166 @@ bool GameScene::isTileOccupied(int x, int y) const {
         return true;
     }
     return m_tileMap.getTile(x, y).occupied;
+}
+
+// ─── Entity interaction ──────────────────────────────────────────────
+
+void GameScene::handleEntityClick(const sf::Vector2i& screenPos) {
+    sf::Vector2f worldPos = m_camera.screenToWorld(screenPos, m_windowSize);
+    sf::Vector2i tilePos = m_tileMap.worldToTile(worldPos);
+
+    Entity* clicked = findEntityAt(tilePos);
+    if (!clicked) {
+        m_selectedEntityId = -1;
+        return;
+    }
+
+    // Check for barracks recruitment
+    if (auto* building = dynamic_cast<Building*>(clicked)) {
+        if (building->getBuildingType() == BuildingType::Barracks && building->isBuilt()) {
+            tryRecruitSoldier(building);
+            return;
+        }
+    }
+
+    // Check for player unit selection
+    if (auto* unit = dynamic_cast<Unit*>(clicked)) {
+        if (unit->getFaction() == Faction::Player) {
+            m_selectedEntityId = unit->getId();
+            return;
+        }
+    }
+
+    m_selectedEntityId = -1;
+}
+
+void GameScene::handleRightClick(const sf::Vector2i& screenPos) {
+    if (m_placementMode) {
+        m_placementMode = false;
+        return;
+    }
+
+    if (m_selectedEntityId < 0) {
+        return;
+    }
+
+    sf::Vector2f worldPos = m_camera.screenToWorld(screenPos, m_windowSize);
+    sf::Vector2i tilePos = m_tileMap.worldToTile(worldPos);
+
+    commandMove(tilePos);
+}
+
+// ─── Unit management ─────────────────────────────────────────────────
+
+void GameScene::tryRecruitSoldier(Building* barracks) {
+    ResourceCost cost = Soldier::getRecruitCost();
+
+    if (!m_resourceManager.canAfford(cost)) {
+        return;
+    }
+
+    if (m_resourceManager.getCurrent(ResourceType::Population) >=
+        m_resourceManager.getMax(ResourceType::Population)) {
+        return;
+    }
+
+    sf::Vector2i spawnTile = findAdjacentEmptyTile(barracks->getTilePosition());
+    if (spawnTile.x < 0) {
+        return;
+    }
+
+    m_resourceManager.tryConsume(cost);
+    m_resourceManager.addResource(ResourceType::Population, 1);
+
+    auto soldier = std::make_unique<Soldier>();
+    soldier->setTilePosition(spawnTile);
+    soldier->setWorldPos(m_tileMap.tileToWorld(spawnTile) +
+        sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));
+
+    m_entities.push_back(std::move(soldier));
+}
+
+void GameScene::commandMove(const sf::Vector2i& tilePos) {
+    if (!m_tileMap.isInBounds(tilePos.x, tilePos.y)) {
+        return;
+    }
+
+    for (auto& entity : m_entities) {
+        if (entity->getId() == m_selectedEntityId) {
+            if (auto* unit = dynamic_cast<Unit*>(entity.get())) {
+                unit->setTarget(tilePos);
+            }
+            break;
+        }
+    }
+}
+
+void GameScene::spawnEnemy() {
+    std::vector<sf::Vector2i> edgeTiles;
+    for (int x = 0; x < TileMap::WIDTH; ++x) {
+        if (isValidSpawnTile(x, 0))                     edgeTiles.push_back({x, 0});
+        if (isValidSpawnTile(x, TileMap::HEIGHT - 1))   edgeTiles.push_back({x, TileMap::HEIGHT - 1});
+    }
+    for (int y = 1; y < TileMap::HEIGHT - 1; ++y) {
+        if (isValidSpawnTile(0, y))                     edgeTiles.push_back({0, y});
+        if (isValidSpawnTile(TileMap::WIDTH - 1, y))    edgeTiles.push_back({TileMap::WIDTH - 1, y});
+    }
+
+    if (edgeTiles.empty()) {
+        return;
+    }
+
+    static std::mt19937 rng(std::random_device{}());
+    std::uniform_int_distribution<size_t> dist(0, edgeTiles.size() - 1);
+    auto spawnPos = edgeTiles[dist(rng)];
+
+    ++m_waveCount;
+
+    sf::Vector2i hqTarget(14, 8);
+    auto enemy = std::make_unique<Enemy>(m_waveCount, hqTarget);
+    enemy->setTilePosition(spawnPos);
+    enemy->setWorldPos(m_tileMap.tileToWorld(spawnPos) +
+        sf::Vector2f(TileMap::TILE_SIZE / 2.0f, TileMap::TILE_SIZE / 2.0f));
+
+    m_entities.push_back(std::move(enemy));
+}
+
+Entity* GameScene::findEntityAt(const sf::Vector2i& tilePos) {
+    for (auto& entity : m_entities) {
+        if (!entity->isActive()) {
+            continue;
+        }
+        if (auto* building = dynamic_cast<Building*>(entity.get())) {
+            for (const auto& t : building->getOccupiedTiles()) {
+                if (t == tilePos) {
+                    return entity.get();
+                }
+            }
+        } else if (entity->getTilePosition() == tilePos) {
+            return entity.get();
+        }
+    }
+    return nullptr;
+}
+
+sf::Vector2i GameScene::findAdjacentEmptyTile(const sf::Vector2i& tilePos) {
+    const sf::Vector2i dirs[] = {{1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}};
+    for (const auto& dir : dirs) {
+        sf::Vector2i adj(tilePos.x + dir.x, tilePos.y + dir.y);
+        if (m_tileMap.isInBounds(adj.x, adj.y)) {
+            const Tile& tile = m_tileMap.getTile(adj.x, adj.y);
+            if (tile.isWalkable() && !tile.occupied) {
+                return adj;
+            }
+        }
+    }
+    return {-1, -1};
+}
+
+bool GameScene::isValidSpawnTile(int x, int y) const {
+    if (!m_tileMap.isInBounds(x, y)) {
+        return false;
+    }
+    const Tile& tile = m_tileMap.getTile(x, y);
+    return tile.isWalkable() && !tile.occupied;
 }

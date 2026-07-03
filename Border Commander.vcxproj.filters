@@ -60,6 +60,9 @@
     <ClCompile Include="src\Entity\Building.cpp">
       <Filter>Entity</Filter>
     </ClCompile>
+    <ClCompile Include="src\Entity\Unit.cpp">
+      <Filter>Entity</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h">
@@ -123,6 +126,9 @@
       <Filter>Entity</Filter>
     </ClInclude>
     <ClInclude Include="include\Entity\Building.h">
+      <Filter>Entity</Filter>
+    </ClInclude>
+    <ClInclude Include="include\Entity\Unit.h">
       <Filter>Entity</Filter>
     </ClInclude>
   </ItemGroup>

@@ -144,6 +144,7 @@
     <ClCompile Include="src\World\Pathfinder.cpp" />
     <ClCompile Include="src\Entity\Entity.cpp" />
     <ClCompile Include="src\Entity\Building.cpp" />
+    <ClCompile Include="src\Entity\Unit.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\Core\Window.h" />
@@ -167,6 +168,7 @@
     <ClInclude Include="include\Entity\Entity.h" />
     <ClInclude Include="include\Entity\BuildingTypes.h" />
     <ClInclude Include="include\Entity\Building.h" />
+    <ClInclude Include="include\Entity\Unit.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

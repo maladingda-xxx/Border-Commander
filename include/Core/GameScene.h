@@ -13,8 +13,10 @@
 #include <memory>
 #include <vector>
 
+class Building;
 class Entity;
 class GameClock;
+class Unit;
 
 class GameScene : public Scene {
 public:
@@ -45,13 +47,29 @@ private:
     ResourceManager m_resourceManager;
     std::vector<std::unique_ptr<Entity>> m_entities;
 
+    // Building placement
     bool m_placementMode = false;
     BuildingType m_selectedBuildingType = BuildingType::Headquarters;
 
+    // Unit selection & enemy spawning
+    int m_selectedEntityId = -1;
+    float m_enemySpawnTimer = 0.0f;
+    int m_waveCount = 0;
+    static constexpr float ENEMY_SPAWN_INTERVAL = 10.0f;
+
     void placeInitialHeadquarters();
     void handleClick(const sf::Vector2i& screenPos);
+    void handleEntityClick(const sf::Vector2i& screenPos);
+    void handleRightClick(const sf::Vector2i& screenPos);
     void recalculateProduction();
     bool canPlaceBuilding(BuildingType type, const sf::Vector2i& tilePos);
     void placeBuilding(BuildingType type, const sf::Vector2i& tilePos);
     bool isTileOccupied(int x, int y) const;
+
+    void tryRecruitSoldier(Building* barracks);
+    void commandMove(const sf::Vector2i& tilePos);
+    void spawnEnemy();
+    Entity* findEntityAt(const sf::Vector2i& tilePos);
+    sf::Vector2i findAdjacentEmptyTile(const sf::Vector2i& tilePos);
+    bool isValidSpawnTile(int x, int y) const;
 };
